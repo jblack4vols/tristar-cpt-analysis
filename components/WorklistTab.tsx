@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { Td, PriBadge } from '@/components/Table'
+import Pagination from '@/components/Pagination'
 import { CPT_DESC, getPriority, fmt$ } from '@/lib/constants'
 import type { Claim } from '@/lib/supabase'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Props {
   datasetId: string | null
@@ -109,12 +109,14 @@ export default function WorklistTab({ datasetId, initialPayer, initialTherapist 
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search patient, payer, CPT, claim #…"
+          placeholder="Search patient, payer, CPT, claim #..."
+          aria-label="Search worklist claims"
           className="text-[11px] bg-zinc-50 dark:bg-zinc-800 border border-zinc-200
             dark:border-zinc-700 rounded px-2.5 py-1.5 w-56
             focus:outline-none focus:border-orange-500"
         />
         <select value={cptFilter} onChange={(e) => setCptFilter(e.target.value)}
+          aria-label="Filter by CPT code"
           className="text-[10px] bg-zinc-50 dark:bg-zinc-800 border border-zinc-200
             dark:border-zinc-700 rounded px-2 py-1.5 focus:outline-none">
           <option value="">All CPTs</option>
@@ -231,21 +233,12 @@ export default function WorklistTab({ datasetId, initialPayer, initialTherapist 
       {/* Pagination */}
       <div className="border-t border-zinc-200 dark:border-zinc-800 px-4 py-2 flex-shrink-0
         bg-zinc-50 dark:bg-zinc-900 flex items-center gap-3">
-        <button onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700
-            disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-          <ChevronLeft size={14} />
-        </button>
-        <span className="text-[10px] text-zinc-400">
-          Page {page} of {Math.max(1, totalPages)} · {count.toLocaleString()} total
-        </span>
-        <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          disabled={page >= totalPages}
-          className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700
-            disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-          <ChevronRight size={14} />
-        </button>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          label={`\u00B7 ${count.toLocaleString()} total`}
+        />
         <span className="ml-auto text-[10px] text-orange-500 font-medium">
           {fmt$(tBilled)} shown at risk
         </span>
