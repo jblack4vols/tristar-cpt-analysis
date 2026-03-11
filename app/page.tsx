@@ -8,6 +8,7 @@ import WorklistTab from '@/components/WorklistTab'
 import StrapTab from '@/components/StrapTab'
 import RawClaimsTab from '@/components/RawClaimsTab'
 import ImportModal from '@/components/ImportModal'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import type { Dataset } from '@/lib/supabase'
 
 type Tab = 'exec' | 'payer' | 'provider' | 'worklist' | 'strap' | 'raw'
@@ -34,12 +35,18 @@ export default function HomePage() {
 
   async function loadDatasets() {
     setLoading(true)
-    const res = await fetch('/api/datasets')
-    const data: Dataset[] = await res.json()
-    setDatasets(data)
-    const active = data.find((d) => d.is_active) ?? data[0] ?? null
-    setActiveDataset(active)
-    setLoading(false)
+    try {
+      const res = await fetch('/api/datasets')
+      if (!res.ok) throw new Error('Failed to load datasets')
+      const data: Dataset[] = await res.json()
+      setDatasets(data)
+      const active = data.find((d) => d.is_active) ?? data[0] ?? null
+      setActiveDataset(active)
+    } catch (err) {
+      console.error('Failed to load datasets:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { loadDatasets() }, [])
@@ -69,7 +76,20 @@ export default function HomePage() {
 
   function drillToCpt(cpt: string) {
     setTab('exec')
-    // ExecTab handles its own state via URL; we use a small trick with key
+  }
+
+  async function handleDeleteDataset(id: string) {
+    try {
+      const res = await fetch('/api/datasets', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) throw new Error('Delete failed')
+      await loadDatasets()
+    } catch (err) {
+      console.error('Failed to delete dataset:', err)
+    }
   }
 
   const dsId = activeDataset?.id ?? null
@@ -79,18 +99,23 @@ export default function HomePage() {
       <TopBar
         datasets={datasets}
         activeDataset={activeDataset}
+        onDatasetChange={setActiveDataset}
+        onDeleteDataset={handleDeleteDataset}
         onImport={() => setShowImport(true)}
         onRefresh={loadDatasets}
         loading={loading}
       />
 
       {/* Tab Bar */}
-      <div className="h-9 flex items-end px-4 gap-0.5 border-b
+      <nav aria-label="Main navigation" role="tablist"
+        className="h-9 flex items-end px-4 gap-0.5 border-b
         border-zinc-200 dark:border-zinc-800
         bg-white dark:bg-zinc-950 overflow-x-auto flex-shrink-0">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
+            role="tab"
+            aria-selected={tab === id}
             onClick={() => setTab(id)}
             className={`px-4 py-2 text-[11px] whitespace-nowrap border-b-2 font-medium
               transition-colors
@@ -102,23 +127,25 @@ export default function HomePage() {
             {label}
           </button>
         ))}
-      </div>
+      </nav>
 
       {/* Content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {tab === 'exec'     && <ExecTab     datasetId={dsId} />}
-        {tab === 'payer'    && <PayerTab    datasetId={dsId} onDrillPayer={drillToPayer} />}
-        {tab === 'provider' && <ProviderTab datasetId={dsId} onDrillProvider={drillToProvider} />}
-        {tab === 'worklist' && (
-          <WorklistTab
-            key={`${wlPayer}-${wlTherapist}`}
-            datasetId={dsId}
-            initialPayer={wlPayer}
-            initialTherapist={wlTherapist}
-          />
-        )}
-        {tab === 'strap'    && <StrapTab    datasetId={dsId} onDrillCpt={drillToCpt} />}
-        {tab === 'raw'      && <RawClaimsTab datasetId={dsId} />}
+      <div className="flex-1 flex flex-col overflow-hidden" role="tabpanel">
+        <ErrorBoundary key={tab}>
+          {tab === 'exec'     && <ExecTab     datasetId={dsId} />}
+          {tab === 'payer'    && <PayerTab    datasetId={dsId} onDrillPayer={drillToPayer} />}
+          {tab === 'provider' && <ProviderTab datasetId={dsId} onDrillProvider={drillToProvider} />}
+          {tab === 'worklist' && (
+            <WorklistTab
+              key={`${wlPayer}-${wlTherapist}`}
+              datasetId={dsId}
+              initialPayer={wlPayer}
+              initialTherapist={wlTherapist}
+            />
+          )}
+          {tab === 'strap'    && <StrapTab    datasetId={dsId} onDrillCpt={drillToCpt} />}
+          {tab === 'raw'      && <RawClaimsTab datasetId={dsId} />}
+        </ErrorBoundary>
       </div>
 
       {showImport && (
