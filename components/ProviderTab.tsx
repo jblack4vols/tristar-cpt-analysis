@@ -1,7 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Th, Td, ZeroPctBadge, useSort } from '@/components/Table'
+import { SkeletonTable } from '@/components/Skeleton'
 import { fmtK, fmt$, pct } from '@/lib/constants'
+import { exportCSV } from '@/lib/export'
+import { Download } from 'lucide-react'
 import type { ProviderSummaryRow } from '@/lib/supabase'
 
 interface Props {
@@ -53,6 +56,25 @@ export default function ProviderTab({ datasetId, onDrillProvider }: Props) {
         <div className="text-[10px] text-zinc-400">
           Red highlight = 30%+ denial rate · Click provider name to see their claims
         </div>
+        <button
+          onClick={() => exportCSV(filtered.map((r) => ({
+            ...r, zero_pct: (r.zero_pct * 100).toFixed(1) + '%', collect_pct: (r.collect_pct * 100).toFixed(1) + '%',
+          })), 'provider-summary', [
+            { key: 'therapist', label: 'Provider' }, { key: 'lines', label: 'Lines' },
+            { key: 'paid_lines', label: 'Paid Lines' }, { key: 'zero_lines', label: '$0 Lines' },
+            { key: 'zero_pct', label: 'Denial%' }, { key: 'billed', label: 'Billed' },
+            { key: 'allowed', label: 'Allowed' }, { key: 'collected', label: 'Collected' },
+            { key: 'collect_pct', label: 'Collect%' }, { key: 'primary_facility', label: 'Primary Facility' },
+          ])}
+          disabled={filtered.length === 0}
+          aria-label="Export provider summary to CSV"
+          className="text-[10px] px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-700
+            bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200
+            disabled:opacity-30 disabled:cursor-not-allowed transition-colors
+            flex items-center gap-1"
+        >
+          <Download size={10} /> Export
+        </button>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -64,7 +86,7 @@ export default function ProviderTab({ datasetId, onDrillProvider }: Props) {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-40 text-zinc-400 text-sm">Loading…</div>
+        <SkeletonTable cols={11} rows={8} />
       ) : (
         <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-auto">
           <table className="w-full">

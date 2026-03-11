@@ -9,6 +9,7 @@ import StrapTab from '@/components/StrapTab'
 import RawClaimsTab from '@/components/RawClaimsTab'
 import ImportModal from '@/components/ImportModal'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { useToast } from '@/components/Toast'
 import type { Dataset } from '@/lib/supabase'
 
 type Tab = 'exec' | 'payer' | 'provider' | 'worklist' | 'strap' | 'raw'
@@ -28,6 +29,7 @@ export default function HomePage() {
   const [activeDataset, setActiveDataset] = useState<Dataset | null>(null)
   const [showImport, setShowImport] = useState(false)
   const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
 
   // Cross-tab drill state
   const [wlPayer,     setWlPayer]     = useState('')
@@ -44,6 +46,7 @@ export default function HomePage() {
       setActiveDataset(active)
     } catch (err) {
       console.error('Failed to load datasets:', err)
+      toast('error', 'Failed to load datasets. Check your connection.')
     } finally {
       setLoading(false)
     }
@@ -53,6 +56,7 @@ export default function HomePage() {
 
   function handleImportSuccess(dsId: string) {
     setShowImport(false)
+    toast('success', 'Dataset imported successfully!')
     loadDatasets().then(() => {
       setDatasets((prev) => {
         const ds = prev.find((d) => d.id === dsId)
@@ -79,6 +83,7 @@ export default function HomePage() {
   }
 
   async function handleDeleteDataset(id: string) {
+    const name = activeDataset?.label ?? 'Dataset'
     try {
       const res = await fetch('/api/datasets', {
         method: 'DELETE',
@@ -86,9 +91,11 @@ export default function HomePage() {
         body: JSON.stringify({ id }),
       })
       if (!res.ok) throw new Error('Delete failed')
+      toast('success', `"${name}" deleted.`)
       await loadDatasets()
     } catch (err) {
       console.error('Failed to delete dataset:', err)
+      toast('error', `Failed to delete "${name}".`)
     }
   }
 
@@ -129,22 +136,22 @@ export default function HomePage() {
         ))}
       </nav>
 
-      {/* Content area */}
+      {/* Content area — keyed on dsId to reset tab state on dataset switch */}
       <div className="flex-1 flex flex-col overflow-hidden" role="tabpanel">
-        <ErrorBoundary key={tab}>
-          {tab === 'exec'     && <ExecTab     datasetId={dsId} />}
-          {tab === 'payer'    && <PayerTab    datasetId={dsId} onDrillPayer={drillToPayer} />}
-          {tab === 'provider' && <ProviderTab datasetId={dsId} onDrillProvider={drillToProvider} />}
+        <ErrorBoundary key={`${tab}-${dsId}`}>
+          {tab === 'exec'     && <ExecTab     key={dsId} datasetId={dsId} />}
+          {tab === 'payer'    && <PayerTab    key={dsId} datasetId={dsId} onDrillPayer={drillToPayer} />}
+          {tab === 'provider' && <ProviderTab key={dsId} datasetId={dsId} onDrillProvider={drillToProvider} />}
           {tab === 'worklist' && (
             <WorklistTab
-              key={`${wlPayer}-${wlTherapist}`}
+              key={`${dsId}-${wlPayer}-${wlTherapist}`}
               datasetId={dsId}
               initialPayer={wlPayer}
               initialTherapist={wlTherapist}
             />
           )}
-          {tab === 'strap'    && <StrapTab    datasetId={dsId} onDrillCpt={drillToCpt} />}
-          {tab === 'raw'      && <RawClaimsTab datasetId={dsId} />}
+          {tab === 'strap'    && <StrapTab    key={dsId} datasetId={dsId} onDrillCpt={drillToCpt} />}
+          {tab === 'raw'      && <RawClaimsTab key={dsId} datasetId={dsId} />}
         </ErrorBoundary>
       </div>
 

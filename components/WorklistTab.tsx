@@ -2,7 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Td, PriBadge } from '@/components/Table'
 import Pagination from '@/components/Pagination'
+import { SkeletonTable } from '@/components/Skeleton'
 import { CPT_DESC, getPriority, fmt$ } from '@/lib/constants'
+import { exportCSV } from '@/lib/export'
+import { Download } from 'lucide-react'
 import type { Claim } from '@/lib/supabase'
 
 interface Props {
@@ -160,6 +163,22 @@ export default function WorklistTab({ datasetId, initialPayer, initialTherapist 
             transition-colors">
           Reset
         </button>
+        <button
+          onClick={() => exportCSV(claims, 'worklist-zero-pay', [
+            { key: 'patient', label: 'Patient' }, { key: 'dos', label: 'DOS' },
+            { key: 'claim_number', label: 'Claim #' }, { key: 'cpt', label: 'CPT' },
+            { key: 'payer', label: 'Payer' }, { key: 'facility', label: 'Facility' },
+            { key: 'therapist', label: 'Therapist' }, { key: 'billed', label: 'Billed' },
+          ])}
+          disabled={claims.length === 0}
+          aria-label="Export worklist to CSV"
+          className="text-[10px] px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-700
+            bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200
+            disabled:opacity-30 disabled:cursor-not-allowed transition-colors
+            flex items-center gap-1"
+        >
+          <Download size={10} /> Export
+        </button>
         <span className="ml-auto text-[10px] text-zinc-400">
           {count.toLocaleString()} claims · {fmt$(tBilled)} at risk
         </span>
@@ -168,7 +187,7 @@ export default function WorklistTab({ datasetId, initialPayer, initialTherapist 
       {/* Table */}
       <div className="flex-1 overflow-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-zinc-400 text-sm">Loading…</div>
+          <SkeletonTable cols={9} rows={12} />
         ) : (
           <table className="w-full">
             <thead>

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Th, Td, ZeroPctBadge, useSort } from '@/components/Table'
 import DrillPanel from '@/components/DrillPanel'
+import { SkeletonTable } from '@/components/Skeleton'
 import { CPT_DESC, fmtK } from '@/lib/constants'
 import type { CPTSummaryRow } from '@/lib/supabase'
 
@@ -52,9 +53,7 @@ export default function ExecTab({ datasetId }: Props) {
           Click any value to drill into individual claims
         </div>
         {loading ? (
-          <div className="flex-1 flex items-center justify-center text-zinc-400 text-sm">
-            Loading...
-          </div>
+          <SkeletonTable cols={9} rows={10} />
         ) : (
           <div className="flex-1 overflow-auto">
             <table className="w-full">

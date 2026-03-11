@@ -1,7 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Th, Td, ZeroPctBadge, useSort } from '@/components/Table'
+import { SkeletonTable } from '@/components/Skeleton'
 import { CPT_DESC, fmtK } from '@/lib/constants'
+import { exportCSV } from '@/lib/export'
+import { Download } from 'lucide-react'
 import type { CPTSummaryRow } from '@/lib/supabase'
 
 interface Props {
@@ -48,8 +51,30 @@ export default function StrapTab({ datasetId, onDrillCpt }: Props) {
         </div>
       </div>
 
+      {sorted.length > 0 && (
+        <div className="flex justify-end mb-3">
+          <button
+            onClick={() => exportCSV(sorted.map((r) => ({
+              ...r, description: CPT_DESC[r.cpt] || '', zero_pct: (r.zero_pct * 100).toFixed(1) + '%', collect_pct: (r.collect_pct * 100).toFixed(1) + '%',
+            })), 'strapping-codes-29xxx', [
+              { key: 'cpt', label: 'CPT' }, { key: 'description', label: 'Description' },
+              { key: 'lines', label: 'Lines' }, { key: 'zero_lines', label: '$0 Lines' },
+              { key: 'zero_pct', label: 'Denial%' }, { key: 'billed', label: 'Billed' },
+              { key: 'collected', label: 'Collected' }, { key: 'collect_pct', label: 'Collect%' },
+              { key: 'zero_risk', label: 'Zero Risk' },
+            ])}
+            aria-label="Export strapping codes to CSV"
+            className="text-[10px] px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-700
+              bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200
+              transition-colors flex items-center gap-1"
+          >
+            <Download size={10} /> Export
+          </button>
+        </div>
+      )}
+
       {loading ? (
-        <div className="flex items-center justify-center h-40 text-zinc-400 text-sm">Loading…</div>
+        <SkeletonTable cols={9} rows={6} />
       ) : (
         <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-auto">
           <table className="w-full">

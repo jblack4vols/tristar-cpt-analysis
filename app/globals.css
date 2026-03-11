@@ -14,3 +14,23 @@ thead { position: sticky; top: 0; z-index: 10; }
 /* Remove number input arrows */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* Toast slide-in animation */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-in.slide-in-from-right {
+  animation: slide-in-right 0.25s ease-out;
+}
+
+/* Skeleton loading pulse */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.15; }
+  50%      { opacity: 0.3; }
+}
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: currentColor;
+  border-radius: 4px;
+}

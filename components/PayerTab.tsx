@@ -1,7 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Th, Td, ZeroPctBadge, PriBadge, useSort } from '@/components/Table'
+import { SkeletonKPIs, SkeletonTable } from '@/components/Skeleton'
 import { getPriority, fmtK, fmt$, pct } from '@/lib/constants'
+import { exportCSV } from '@/lib/export'
+import { Download } from 'lucide-react'
 import type { PayerSummaryRow } from '@/lib/supabase'
 
 interface Props {
@@ -46,6 +49,13 @@ export default function PayerTab({ datasetId, onDrillPayer }: Props) {
 
   return (
     <div className="flex-1 overflow-auto p-4">
+      {loading ? (
+        <>
+          <SkeletonKPIs count={5} />
+          <SkeletonTable cols={10} rows={8} />
+        </>
+      ) : (
+      <>
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
         {[
@@ -87,12 +97,29 @@ export default function PayerTab({ datasetId, onDrillPayer }: Props) {
             </button>
           ))}
         </div>
+        <button
+          onClick={() => exportCSV(filtered.map((r) => {
+            const [pri, action] = getPriority(r.payer)
+            return { ...r, priority: pri, action, zero_pct: (r.zero_pct * 100).toFixed(1) + '%', collect_pct: (r.collect_pct * 100).toFixed(1) + '%' }
+          }), 'payer-analysis', [
+            { key: 'payer', label: 'Payer' }, { key: 'priority', label: 'Priority' },
+            { key: 'lines', label: 'Lines' }, { key: 'zero_lines', label: '$0 Lines' },
+            { key: 'zero_pct', label: 'Denial%' }, { key: 'billed', label: 'Billed' },
+            { key: 'collected', label: 'Collected' }, { key: 'collect_pct', label: 'Collect%' },
+            { key: 'zero_risk', label: 'Zero Risk' }, { key: 'action', label: 'Action' },
+          ])}
+          disabled={filtered.length === 0}
+          aria-label="Export payer analysis to CSV"
+          className="text-[10px] px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-700
+            bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200
+            disabled:opacity-30 disabled:cursor-not-allowed transition-colors
+            flex items-center gap-1"
+        >
+          <Download size={10} /> Export
+        </button>
         <span className="ml-auto text-[10px] text-zinc-400">{filtered.length} payers</span>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-40 text-zinc-400 text-sm">Loading…</div>
-      ) : (
         <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-auto">
           <table className="w-full">
             <thead>
@@ -141,6 +168,7 @@ export default function PayerTab({ datasetId, onDrillPayer }: Props) {
             </tbody>
           </table>
         </div>
+      </>
       )}
     </div>
   )
