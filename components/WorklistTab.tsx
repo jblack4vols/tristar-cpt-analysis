@@ -6,6 +6,7 @@ import { SkeletonTable } from '@/components/Skeleton'
 import { CPT_DESC, getPriority, fmt$ } from '@/lib/constants'
 import { exportCSV } from '@/lib/export'
 import { Download } from 'lucide-react'
+import DateRangeFilter from '@/components/DateRangeFilter'
 import type { Claim } from '@/lib/supabase'
 
 interface Props {
@@ -29,6 +30,8 @@ export default function WorklistTab({ datasetId, initialPayer, initialTherapist 
   const [facFilter, setFacFilter] = useState('')
   const [therapistFilter, setTherapistFilter] = useState(initialTherapist || '')
   const [priFilter, setPriFilter] = useState<'' | 'H' | 'M' | 'L'>('')
+  const [dosStart, setDosStart] = useState('')
+  const [dosEnd, setDosEnd] = useState('')
   const [sortCol, setSortCol] = useState('billed')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
@@ -70,6 +73,8 @@ export default function WorklistTab({ datasetId, initialPayer, initialTherapist 
     if (payerFilter)    params.set('payer', payerFilter)
     if (facFilter)      params.set('facility', facFilter)
     if (therapistFilter) params.set('therapist', therapistFilter)
+    if (dosStart)       params.set('dos_start', dosStart)
+    if (dosEnd)         params.set('dos_end', dosEnd)
 
     fetch(`/api/claims?${params}`)
       .then((r) => r.json())
@@ -83,10 +88,10 @@ export default function WorklistTab({ datasetId, initialPayer, initialTherapist 
         setCount(count ?? 0)
       })
       .finally(() => setLoading(false))
-  }, [datasetId, page, sortCol, sortDir, q, cptFilter, payerFilter, facFilter, therapistFilter, priFilter])
+  }, [datasetId, page, sortCol, sortDir, q, cptFilter, payerFilter, facFilter, therapistFilter, priFilter, dosStart, dosEnd])
 
   useEffect(() => { loadClaims() }, [loadClaims])
-  useEffect(() => { setPage(1) }, [q, cptFilter, payerFilter, facFilter, therapistFilter, priFilter])
+  useEffect(() => { setPage(1) }, [q, cptFilter, payerFilter, facFilter, therapistFilter, priFilter, dosStart, dosEnd])
 
   function doSort(c: string) {
     if (c === sortCol) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -97,7 +102,7 @@ export default function WorklistTab({ datasetId, initialPayer, initialTherapist 
   const tBilled = claims.reduce((s, c) => s + c.billed, 0)
 
   function reset() {
-    setQ(''); setCptFilter(''); setPayerFilter(''); setFacFilter(''); setTherapistFilter(''); setPriFilter('')
+    setQ(''); setCptFilter(''); setPayerFilter(''); setFacFilter(''); setTherapistFilter(''); setPriFilter(''); setDosStart(''); setDosEnd('')
   }
 
   if (!datasetId) return (
@@ -157,6 +162,11 @@ export default function WorklistTab({ datasetId, initialPayer, initialTherapist 
             </button>
           ))}
         </div>
+        <DateRangeFilter
+          startDate={dosStart} endDate={dosEnd}
+          onStartChange={setDosStart} onEndChange={setDosEnd}
+          onClear={() => { setDosStart(''); setDosEnd('') }}
+        />
         <button onClick={reset}
           className="text-[10px] px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-700
             bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200

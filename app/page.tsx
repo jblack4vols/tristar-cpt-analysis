@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import TopBar from '@/components/TopBar'
 import ExecTab from '@/components/ExecTab'
 import PayerTab from '@/components/PayerTab'
@@ -99,6 +99,28 @@ export default function HomePage() {
     }
   }
 
+  // Keyboard shortcuts: 1-6 switch tabs, Esc closes modals
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Skip if user is typing in an input/select/textarea
+    const tag = (e.target as HTMLElement)?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+    if (e.key === 'Escape') {
+      setShowImport(false)
+      return
+    }
+
+    const idx = parseInt(e.key) - 1
+    if (idx >= 0 && idx < TABS.length) {
+      setTab(TABS[idx].id)
+    }
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
+
   const dsId = activeDataset?.id ?? null
 
   return (
@@ -118,12 +140,13 @@ export default function HomePage() {
         className="h-9 flex items-end px-4 gap-0.5 border-b
         border-zinc-200 dark:border-zinc-800
         bg-white dark:bg-zinc-950 overflow-x-auto flex-shrink-0">
-        {TABS.map(({ id, label }) => (
+        {TABS.map(({ id, label }, i) => (
           <button
             key={id}
             role="tab"
             aria-selected={tab === id}
             onClick={() => setTab(id)}
+            title={`${label} (${i + 1})`}
             className={`px-4 py-2 text-[11px] whitespace-nowrap border-b-2 font-medium
               transition-colors
               ${tab === id
@@ -131,6 +154,7 @@ export default function HomePage() {
                 : 'border-transparent text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
               }`}
           >
+            <span className="text-[9px] opacity-40 mr-1">{i + 1}</span>
             {label}
           </button>
         ))}

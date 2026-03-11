@@ -6,6 +6,7 @@ import { SkeletonTable } from '@/components/Skeleton'
 import { CPT_DESC, fmt$ } from '@/lib/constants'
 import { exportCSV } from '@/lib/export'
 import { Download } from 'lucide-react'
+import DateRangeFilter from '@/components/DateRangeFilter'
 import type { Claim } from '@/lib/supabase'
 
 interface Props {
@@ -25,6 +26,8 @@ export default function RawClaimsTab({ datasetId }: Props) {
   const [facFilter, setFacFilter] = useState('')
   const [therapistFilter, setTherapistFilter] = useState('')
   const [filterPaid, setFilterPaid] = useState<'' | 'paid' | 'zero'>('')
+  const [dosStart, setDosStart] = useState('')
+  const [dosEnd, setDosEnd] = useState('')
   const [sortCol, setSortCol] = useState('dos')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
@@ -65,6 +68,8 @@ export default function RawClaimsTab({ datasetId }: Props) {
     if (facFilter)      params.set('facility', facFilter)
     if (therapistFilter) params.set('therapist', therapistFilter)
     if (filterPaid)     params.set('filter', filterPaid)
+    if (dosStart)       params.set('dos_start', dosStart)
+    if (dosEnd)         params.set('dos_end', dosEnd)
 
     fetch(`/api/claims?${params}`)
       .then((r) => r.json())
@@ -73,10 +78,10 @@ export default function RawClaimsTab({ datasetId }: Props) {
         setCount(count ?? 0)
       })
       .finally(() => setLoading(false))
-  }, [datasetId, page, sortCol, sortDir, q, cptFilter, payerFilter, facFilter, therapistFilter, filterPaid])
+  }, [datasetId, page, sortCol, sortDir, q, cptFilter, payerFilter, facFilter, therapistFilter, filterPaid, dosStart, dosEnd])
 
   useEffect(() => { load() }, [load])
-  useEffect(() => { setPage(1) }, [q, cptFilter, payerFilter, facFilter, therapistFilter, filterPaid])
+  useEffect(() => { setPage(1) }, [q, cptFilter, payerFilter, facFilter, therapistFilter, filterPaid, dosStart, dosEnd])
 
   function doSort(c: string) {
     if (c === sortCol) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -157,6 +162,11 @@ export default function RawClaimsTab({ datasetId }: Props) {
             </button>
           ))}
         </div>
+        <DateRangeFilter
+          startDate={dosStart} endDate={dosEnd}
+          onStartChange={setDosStart} onEndChange={setDosEnd}
+          onClear={() => { setDosStart(''); setDosEnd('') }}
+        />
         <button
           onClick={() => exportCSV(claims, 'all-claims', [
             { key: 'patient', label: 'Patient' }, { key: 'dos', label: 'DOS' },

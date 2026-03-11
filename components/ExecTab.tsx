@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react'
 import { Th, Td, ZeroPctBadge, useSort } from '@/components/Table'
 import DrillPanel from '@/components/DrillPanel'
-import { SkeletonTable } from '@/components/Skeleton'
-import { CPT_DESC, fmtK } from '@/lib/constants'
+import DenialChart from '@/components/DenialChart'
+import { SkeletonTable, SkeletonKPIs } from '@/components/Skeleton'
+import { CPT_DESC, fmtK, pct } from '@/lib/constants'
 import type { CPTSummaryRow } from '@/lib/supabase'
 
 interface Props {
@@ -44,11 +45,42 @@ export default function ExecTab({ datasetId }: Props) {
     </div>
   )
 
+  const totBilled    = summary.reduce((s, r) => s + r.billed, 0)
+  const totCollected = summary.reduce((s, r) => s + r.collected, 0)
+  const totLines     = summary.reduce((s, r) => s + r.lines, 0)
+  const totZeroLines = summary.reduce((s, r) => s + r.zero_lines, 0)
+  const totZeroRisk  = summary.reduce((s, r) => s + r.zero_risk, 0)
+
+  const kpis = [
+    { label: 'Total Billed', value: fmtK(totBilled), cls: 'text-orange-500' },
+    { label: 'Collected', value: fmtK(totCollected), cls: 'text-green-500' },
+    { label: 'Collect Rate', value: pct(totCollected, totBilled), cls: totCollected / totBilled > 0.7 ? 'text-green-500' : 'text-red-500' },
+    { label: 'Denial Rate', value: pct(totZeroLines, totLines), cls: totZeroLines / totLines > 0.2 ? 'text-red-500' : 'text-zinc-300' },
+    { label: 'Zero-Pay Risk', value: fmtK(totZeroRisk), cls: totZeroRisk > 100000 ? 'text-red-500' : 'text-yellow-500' },
+  ]
+
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* LEFT: CPT Summary Table */}
       <div className="w-[620px] min-w-[620px] border-r border-zinc-200 dark:border-zinc-800 flex flex-col overflow-hidden">
-        <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-800
+        {/* KPI Cards */}
+        <div className="px-3 pt-3 pb-1 flex-shrink-0">
+          {loading ? (
+            <SkeletonKPIs count={5} />
+          ) : (
+            <div className="grid grid-cols-5 gap-2 mb-2">
+              {kpis.map((k) => (
+                <div key={k.label} className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200
+                  dark:border-zinc-800 rounded-lg px-3 py-2">
+                  <div className="text-[9px] text-zinc-400 uppercase tracking-wide">{k.label}</div>
+                  <div className={`text-sm font-semibold ${k.cls}`}>{k.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {!loading && summary.length > 0 && <DenialChart data={summary} />}
+        </div>
+        <div className="px-3 py-1.5 border-b border-zinc-200 dark:border-zinc-800
           bg-zinc-50 dark:bg-zinc-900 text-[10px] text-zinc-400 flex-shrink-0">
           Click any value to drill into individual claims
         </div>

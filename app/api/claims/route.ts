@@ -22,6 +22,8 @@ export async function GET(req: NextRequest) {
     const facility   = sp.get('facility')
     const therapist  = sp.get('therapist')
     const filter     = sp.get('filter')   // 'paid' | 'zero' | 'all'
+    const dosStart   = sp.get('dos_start')
+    const dosEnd     = sp.get('dos_end')
     const q          = sp.get('q')
     const page       = Math.max(1, parseInt(sp.get('page') || '1') || 1)
     const pageSize   = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(sp.get('page_size') || '200') || 200))
@@ -46,6 +48,8 @@ export async function GET(req: NextRequest) {
     if (therapist) query = query.eq('therapist', therapist)
     if (filter === 'paid') query = query.gt('paid', 0)
     if (filter === 'zero') query = query.eq('paid', 0)
+    if (dosStart) query = query.gte('dos', dosStart)
+    if (dosEnd)   query = query.lte('dos', dosEnd)
 
     if (q) {
       const safe = sanitizeSearch(q)
